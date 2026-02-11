@@ -477,7 +477,7 @@ Reference FDW realization, `postgres_fdw`
 
 License
 -------
-Portions Copyright (c) 2004-2025, EnterpriseDB Corporation.
+Portions Copyright (c) 2004-2026, EnterpriseDB Corporation.
 Portions Copyright © 2012–2014 Citus Data, Inc.
 
 This program is free software: you can redistribute it and/or modify it
