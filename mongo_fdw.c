@@ -2335,7 +2335,7 @@ column_types_compatible(BSON_TYPE bsonType, Oid columnTypeId)
 		case FLOAT8OID:
 		case NUMERICOID:
 			if (bsonType == BSON_TYPE_INT32 || bsonType == BSON_TYPE_INT64 ||
-				bsonType == BSON_TYPE_DOUBLE)
+				bsonType == BSON_TYPE_DOUBLE || bsonType == BSON_TYPE_DECIMAL128)
 				compatibleTypes = true;
 			if (bsonType == BSON_TYPE_BOOL)
 				compatibleTypes = true;
@@ -2348,7 +2348,7 @@ column_types_compatible(BSON_TYPE bsonType, Oid columnTypeId)
 		case BPCHAROID:
 		case VARCHAROID:
 		case TEXTOID:
-			if (bsonType == BSON_TYPE_UTF8)
+			if (bsonType == BSON_TYPE_UTF8 || bsonType == BSON_TYPE_DECIMAL128)
 				compatibleTypes = true;
 			break;
 		case BYTEAOID:
@@ -2490,51 +2490,171 @@ column_value(BSON_ITERATOR *bsonIterator, Oid columnTypeId,
 	{
 		case INT2OID:
 			{
-				int16		value = (int16) bsonIterInt32(bsonIterator);
+				if (bsonIterType(bsonIterator) == BSON_TYPE_DECIMAL128)
+				{
+					bson_decimal128_t	decimal;
+					char				decStr[BSON_DECIMAL128_STRING];
+					Datum				numDatum;
+					int64				val;
 
-				columnValue = Int16GetDatum(value);
+					bsonIterDecimal128(bsonIterator, &decimal);
+					bson_decimal128_to_string(&decimal, decStr);
+					numDatum = DirectFunctionCall3(numeric_in,
+												   CStringGetDatum(decStr),
+												   ObjectIdGetDatum(InvalidOid),
+												   Int32GetDatum(-1));
+					val = DatumGetInt64(DirectFunctionCall1(numeric_int8,
+															numDatum));
+					if (val < PG_INT16_MIN || val > PG_INT16_MAX)
+						ereport(ERROR,
+								(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+								 errmsg("Decimal128 value \"%s\" is out of range for type smallint",
+										decStr)));
+					columnValue = Int16GetDatum((int16) val);
+				}
+				else
+				{
+					int16		value = (int16) bsonIterInt32(bsonIterator);
+
+					columnValue = Int16GetDatum(value);
+				}
 			}
 			break;
 		case INT4OID:
 			{
-				int32		value = bsonIterInt32(bsonIterator);
+				if (bsonIterType(bsonIterator) == BSON_TYPE_DECIMAL128)
+				{
+					bson_decimal128_t	decimal;
+					char				decStr[BSON_DECIMAL128_STRING];
+					Datum				numDatum;
+					int64				val;
 
-				columnValue = Int32GetDatum(value);
+					bsonIterDecimal128(bsonIterator, &decimal);
+					bson_decimal128_to_string(&decimal, decStr);
+					numDatum = DirectFunctionCall3(numeric_in,
+												   CStringGetDatum(decStr),
+												   ObjectIdGetDatum(InvalidOid),
+												   Int32GetDatum(-1));
+					val = DatumGetInt64(DirectFunctionCall1(numeric_int8,
+															numDatum));
+					if (val < PG_INT32_MIN || val > PG_INT32_MAX)
+						ereport(ERROR,
+								(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
+								 errmsg("Decimal128 value \"%s\" is out of range for type integer",
+										decStr)));
+					columnValue = Int32GetDatum((int32) val);
+				}
+				else
+				{
+					int32		value = bsonIterInt32(bsonIterator);
+
+					columnValue = Int32GetDatum(value);
+				}
 			}
 			break;
 		case INT8OID:
 			{
-				int64		value = bsonIterInt64(bsonIterator);
+				if (bsonIterType(bsonIterator) == BSON_TYPE_DECIMAL128)
+				{
+					bson_decimal128_t	decimal;
+					char				decStr[BSON_DECIMAL128_STRING];
+					Datum				numDatum;
 
-				columnValue = Int64GetDatum(value);
+					bsonIterDecimal128(bsonIterator, &decimal);
+					bson_decimal128_to_string(&decimal, decStr);
+					numDatum = DirectFunctionCall3(numeric_in,
+												   CStringGetDatum(decStr),
+												   ObjectIdGetDatum(InvalidOid),
+												   Int32GetDatum(-1));
+					columnValue = DirectFunctionCall1(numeric_int8, numDatum);
+				}
+				else
+				{
+					int64		value = bsonIterInt64(bsonIterator);
+
+					columnValue = Int64GetDatum(value);
+				}
 			}
 			break;
 		case FLOAT4OID:
 			{
-				float4		value = (float4) bsonIterDouble(bsonIterator);
+				if (bsonIterType(bsonIterator) == BSON_TYPE_DECIMAL128)
+				{
+					bson_decimal128_t	decimal;
+					char				decStr[BSON_DECIMAL128_STRING];
+					Datum				numDatum;
 
-				columnValue = Float4GetDatum(value);
+					bsonIterDecimal128(bsonIterator, &decimal);
+					bson_decimal128_to_string(&decimal, decStr);
+					numDatum = DirectFunctionCall3(numeric_in,
+												   CStringGetDatum(decStr),
+												   ObjectIdGetDatum(InvalidOid),
+												   Int32GetDatum(-1));
+					columnValue = DirectFunctionCall1(numeric_float4, numDatum);
+				}
+				else
+				{
+					float4		value = (float4) bsonIterDouble(bsonIterator);
+
+					columnValue = Float4GetDatum(value);
+				}
 			}
 			break;
 		case FLOAT8OID:
 			{
-				float8		value = bsonIterDouble(bsonIterator);
+				if (bsonIterType(bsonIterator) == BSON_TYPE_DECIMAL128)
+				{
+					bson_decimal128_t	decimal;
+					char				decStr[BSON_DECIMAL128_STRING];
+					Datum				numDatum;
 
-				columnValue = Float8GetDatum(value);
+					bsonIterDecimal128(bsonIterator, &decimal);
+					bson_decimal128_to_string(&decimal, decStr);
+					numDatum = DirectFunctionCall3(numeric_in,
+												   CStringGetDatum(decStr),
+												   ObjectIdGetDatum(InvalidOid),
+												   Int32GetDatum(-1));
+					columnValue = DirectFunctionCall1(numeric_float8, numDatum);
+				}
+				else
+				{
+					float8		value = bsonIterDouble(bsonIterator);
+
+					columnValue = Float8GetDatum(value);
+				}
 			}
 			break;
 		case NUMERICOID:
 			{
-				float8		value = bsonIterDouble(bsonIterator);
-				Datum		valueDatum = DirectFunctionCall1(float8_numeric,
-															 Float8GetDatum(value));
+				if (bsonIterType(bsonIterator) == BSON_TYPE_DECIMAL128)
+				{
+					bson_decimal128_t	decimal;
+					char				decStr[BSON_DECIMAL128_STRING];
+					Datum				valueDatum;
 
-				/*
-				 * Since we have a Numeric value, using numeric() here instead
-				 * of numeric_in() input function for typmod conversion.
-				 */
-				columnValue = DirectFunctionCall2(numeric, valueDatum,
-												  Int32GetDatum(columnTypeMod));
+					bsonIterDecimal128(bsonIterator, &decimal);
+					bson_decimal128_to_string(&decimal, decStr);
+					valueDatum = DirectFunctionCall3(numeric_in,
+													 CStringGetDatum(decStr),
+													 ObjectIdGetDatum(InvalidOid),
+													 Int32GetDatum(-1));
+					columnValue = DirectFunctionCall2(numeric, valueDatum,
+													  Int32GetDatum(columnTypeMod));
+				}
+				else
+				{
+					float8		value = bsonIterDouble(bsonIterator);
+					Datum		valueDatum = DirectFunctionCall1(float8_numeric,
+																 Float8GetDatum(value));
+
+					/*
+					 * Since we have a Numeric value, using numeric() here
+					 * instead of numeric_in() input function for typmod
+					 * conversion.
+					 */
+					columnValue = DirectFunctionCall2(numeric, valueDatum,
+													  Int32GetDatum(columnTypeMod));
+				}
 			}
 			break;
 		case BOOLOID:
@@ -2546,9 +2666,22 @@ column_value(BSON_ITERATOR *bsonIterator, Oid columnTypeId,
 			break;
 		case BPCHAROID:
 			{
-				const char *value = bsonIterString(bsonIterator);
-				Datum		valueDatum = CStringGetDatum(value);
+				const char *value;
+				Datum		valueDatum;
+				char		decStr[BSON_DECIMAL128_STRING];
 
+				if (bsonIterType(bsonIterator) == BSON_TYPE_DECIMAL128)
+				{
+					bson_decimal128_t	decimal;
+
+					bsonIterDecimal128(bsonIterator, &decimal);
+					bson_decimal128_to_string(&decimal, decStr);
+					value = decStr;
+				}
+				else
+					value = bsonIterString(bsonIterator);
+
+				valueDatum = CStringGetDatum(value);
 				columnValue = DirectFunctionCall3(bpcharin, valueDatum,
 												  ObjectIdGetDatum(InvalidOid),
 												  Int32GetDatum(columnTypeMod));
@@ -2556,9 +2689,22 @@ column_value(BSON_ITERATOR *bsonIterator, Oid columnTypeId,
 			break;
 		case VARCHAROID:
 			{
-				const char *value = bsonIterString(bsonIterator);
-				Datum		valueDatum = CStringGetDatum(value);
+				const char *value;
+				Datum		valueDatum;
+				char		decStr[BSON_DECIMAL128_STRING];
 
+				if (bsonIterType(bsonIterator) == BSON_TYPE_DECIMAL128)
+				{
+					bson_decimal128_t	decimal;
+
+					bsonIterDecimal128(bsonIterator, &decimal);
+					bson_decimal128_to_string(&decimal, decStr);
+					value = decStr;
+				}
+				else
+					value = bsonIterString(bsonIterator);
+
+				valueDatum = CStringGetDatum(value);
 				columnValue = DirectFunctionCall3(varcharin, valueDatum,
 												  ObjectIdGetDatum(InvalidOid),
 												  Int32GetDatum(columnTypeMod));
@@ -2566,7 +2712,19 @@ column_value(BSON_ITERATOR *bsonIterator, Oid columnTypeId,
 			break;
 		case TEXTOID:
 			{
-				const char *value = bsonIterString(bsonIterator);
+				const char *value;
+				char		decStr[BSON_DECIMAL128_STRING];
+
+				if (bsonIterType(bsonIterator) == BSON_TYPE_DECIMAL128)
+				{
+					bson_decimal128_t	decimal;
+
+					bsonIterDecimal128(bsonIterator, &decimal);
+					bson_decimal128_to_string(&decimal, decStr);
+					value = decStr;
+				}
+				else
+					value = bsonIterString(bsonIterator);
 
 				columnValue = CStringGetTextDatum(value);
 			}

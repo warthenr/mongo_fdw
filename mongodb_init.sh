@@ -19,3 +19,4 @@ mongoimport --host=$MONGO_HOST --port=$MONGO_PORT -u $MONGO_USER_NAME -p $MONGO_
 mongoimport --host=$MONGO_HOST --port=$MONGO_PORT -u $MONGO_USER_NAME -p $MONGO_PWD --db mongo_fdw_regress --collection testlog --jsonArray --drop --maintainInsertionOrder --quiet < data/mongo_testlog.json
 mongoimport --host=$MONGO_HOST --port=$MONGO_PORT -u $MONGO_USER_NAME -p $MONGO_PWD --db mongo_fdw_regress --collection testdevice --jsonArray --drop --maintainInsertionOrder --quiet < data/mongo_testdevice.json
 mongosh --host=$MONGO_HOST --port=$MONGO_PORT -u $MONGO_USER_NAME -p $MONGO_PWD --authenticationDatabase "mongo_fdw_regress" < data/mongo_test_data.js > /dev/null
+mongosh --host=$MONGO_HOST --port=$MONGO_PORT -u $MONGO_USER_NAME -p $MONGO_PWD --authenticationDatabase "mongo_fdw_regress" < data/mongo_test_decimal128.js > /dev/null

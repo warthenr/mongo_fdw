@@ -52,6 +52,7 @@ const char *bsonIterString(BSON_ITERATOR *it);
 const char *bsonIterBinData(BSON_ITERATOR *it, uint32_t *len);
 const bson_oid_t *bsonIterOid(BSON_ITERATOR *it);
 time_t		bsonIterDate(BSON_ITERATOR *it);
+bool		bsonIterDecimal128(BSON_ITERATOR *it, bson_decimal128_t *dec);
 int			bsonIterType(BSON_ITERATOR *it);
 int			bsonIterNext(BSON_ITERATOR *it);
 bool		bsonIterSubIter(BSON_ITERATOR *it, BSON_ITERATOR *sub);
@@ -74,6 +75,8 @@ bool		bsonAppendDouble(BSON *b, const char *key, double v);
 bool		bsonAppendUTF8(BSON *b, const char *key, char *v);
 bool		bsonAppendBinary(BSON *b, const char *key, char *v, size_t len);
 bool		bsonAppendDate(BSON *b, const char *key, time_t v);
+bool		bsonAppendDecimal128(BSON *b, const char *key,
+								 bson_decimal128_t *v);
 bool		bsonAppendStartArray(BSON *b, const char *key, BSON *c);
 bool		bsonAppendFinishArray(BSON *b, BSON *c);
 bool		bsonAppendStartObject(BSON *b, char *key, BSON *r);

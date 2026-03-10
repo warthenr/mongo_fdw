@@ -432,6 +432,12 @@ bsonIterDate(BSON_ITERATOR *it)
 	return bson_iter_date_time(it);
 }
 
+bool
+bsonIterDecimal128(BSON_ITERATOR *it, bson_decimal128_t *dec)
+{
+	return bson_iter_decimal128(it, dec);
+}
+
 const char *
 bsonIterKey(BSON_ITERATOR *it)
 {
@@ -528,6 +534,12 @@ bool
 bsonAppendDate(BSON *b, const char *key, time_t v)
 {
 	return bson_append_date_time(b, key, strlen(key), v);
+}
+
+bool
+bsonAppendDecimal128(BSON *b, const char *key, bson_decimal128_t *v)
+{
+	return bson_append_decimal128(b, key, strlen(key), v);
 }
 
 bool

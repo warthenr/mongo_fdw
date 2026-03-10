@@ -761,6 +761,14 @@ append_mongo_value(BSON *queryDocument, const char *keyName, Datum value,
 															 value);
 				float8		valueFloat = DatumGetFloat8(valueDatum);
 
+				/*
+				 * TODO: Consider using bsonAppendDecimal128() here instead of
+				 * bsonAppendDouble() to preserve full NUMERIC precision when
+				 * writing to MongoDB.  The conversion would be:
+				 *   numeric -> string -> bson_decimal128_from_string()
+				 * This would avoid the precision loss inherent in the
+				 * float8 intermediate representation.
+				 */
 				status = bsonAppendDouble(queryDocument, keyName, valueFloat);
 			}
 			break;
