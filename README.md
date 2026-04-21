@@ -4,8 +4,9 @@ MongoDB Foreign Data Wrapper for PostgreSQL
 This PostgreSQL extension implements a Foreign Data Wrapper (FDW) for
 [MongoDB][1].
 
-Please note that this version of mongo_fdw works with PostgreSQL and EDB
-Postgres Advanced Server 13, 14, 15, 16, 17, and 18.
+Please note that this version of mongo_fdw works with PostgreSQL,
+EDB Postgres Advanced Server, and EDB Postgres Extended Server
+14, 15, 16, 17, and 18.
 
 Contents
 --------

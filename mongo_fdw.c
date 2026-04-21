@@ -30,9 +30,7 @@
 #include "mongo_fdw.h"
 #include "mongo_query.h"
 #include "nodes/nodeFuncs.h"
-#if PG_VERSION_NUM >= 140000
 #include "optimizer/appendinfo.h"
-#endif
 #include "optimizer/optimizer.h"
 #include "optimizer/paths.h"
 #include "optimizer/tlist.h"
@@ -138,16 +136,10 @@ static TupleTableSlot *mongoExecForeignDelete(EState *estate,
 											  TupleTableSlot *planSlot);
 static void mongoEndForeignModify(EState *estate,
 								  ResultRelInfo *resultRelInfo);
-#if PG_VERSION_NUM >= 140000
 static void mongoAddForeignUpdateTargets(PlannerInfo *root,
 										 Index rtindex,
 										 RangeTblEntry *target_rte,
 										 Relation target_relation);
-#else
-static void mongoAddForeignUpdateTargets(Query *parsetree,
-										 RangeTblEntry *target_rte,
-										 Relation target_relation);
-#endif
 static void mongoBeginForeignModify(ModifyTableState *mtstate,
 									ResultRelInfo *resultRelInfo,
 									List *fdw_private,
@@ -1627,11 +1619,7 @@ mongoBeginForeignModify(ModifyTableState *mtstate,
 	if (mtstate->operation == CMD_UPDATE)
 	{
 		Form_pg_attribute attr;
-#if PG_VERSION_NUM >= 140000
 		Plan	   *subplan = outerPlanState(mtstate)->plan;
-#else
-		Plan	   *subplan = mtstate->mt_plans[subplan_index]->plan;
-#endif
 
 		Assert(subplan != NULL);
 
@@ -1742,24 +1730,14 @@ mongoExecForeignInsert(EState *estate,
  *		first column as row identification column, so we are adding that into
  *		target list.
  */
-#if PG_VERSION_NUM >= 140000
 static void
 mongoAddForeignUpdateTargets(PlannerInfo *root,
 							 Index rtindex,
 							 RangeTblEntry *target_rte,
 							 Relation target_relation)
-#else
-static void
-mongoAddForeignUpdateTargets(Query *parsetree,
-							 RangeTblEntry *target_rte,
-							 Relation target_relation)
-#endif
 {
 	Var		   *var;
 	const char *attrname;
-#if PG_VERSION_NUM < 140000
-	TargetEntry *tle;
-#endif
 
 	/*
 	 * What we need is the rowid which is the first column
@@ -1768,11 +1746,7 @@ mongoAddForeignUpdateTargets(Query *parsetree,
 										   0);
 
 	/* Make a Var representing the desired value */
-#if PG_VERSION_NUM >= 140000
 	var = makeVar(rtindex,
-#else
-	var = makeVar(parsetree->resultRelation,
-#endif
 				  1,
 				  attr->atttypid,
 				  attr->atttypmod,
@@ -1782,19 +1756,8 @@ mongoAddForeignUpdateTargets(Query *parsetree,
 	/* Get name of the row identifier column */
 	attrname = NameStr(attr->attname);
 
-#if PG_VERSION_NUM >= 140000
 	/* Register it as a row-identity column needed by this target rel */
 	add_row_identity_var(root, var, rtindex, attrname);
-#else
-	/* Wrap it in a TLE with the right name ... */
-	tle = makeTargetEntry((Expr *) var,
-						  list_length(parsetree->targetList) + 1,
-						  pstrdup(attrname),
-						  true);
-
-	/* ... And add it to the query's targetlist */
-	parsetree->targetList = lappend(parsetree->targetList, tle);
-#endif
 }
 
 static TupleTableSlot *
@@ -3694,18 +3657,9 @@ mongo_foreign_grouping_ok(PlannerInfo *root, RelOptInfo *grouped_rel,
 									  grouped_rel->relids,
 									  NULL,
 									  NULL);
-#elif PG_VERSION_NUM >= 140000
+#else
 			rinfo = make_restrictinfo(root,
 									  expr,
-									  true,
-									  false,
-									  false,
-									  root->qual_security_level,
-									  grouped_rel->relids,
-									  NULL,
-									  NULL);
-#else
-			rinfo = make_restrictinfo(expr,
 									  true,
 									  false,
 									  false,
@@ -3878,17 +3832,10 @@ mongo_add_foreign_grouping_paths(PlannerInfo *root, RelOptInfo *input_rel,
 	total_cost = 10 + startup_cost;
 
 	/* Estimate output tuples which should be same as number of groups */
-#if PG_VERSION_NUM >= 140000
 	num_groups = estimate_num_groups(root,
 									 get_sortgrouplist_exprs(root->parse->groupClause,
 															 fpinfo->grouped_tlist),
 									 input_rel->rows, NULL, NULL);
-#else
-	num_groups = estimate_num_groups(root,
-									 get_sortgrouplist_exprs(root->parse->groupClause,
-															 fpinfo->grouped_tlist),
-									 input_rel->rows, NULL);
-#endif
 
 	/* Create and add foreign path to the grouping relation. */
 #if PG_VERSION_NUM >= 180000
